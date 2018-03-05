@@ -14,3 +14,14 @@ WAT2017におけるTMU（首都大小町研）のシステムです。
 - h5py (ver 2.7.0)
 - gensim (ver 2.2.0)
 
+## 2. 実験設定
+実験の設定はconfigファイルにて行います。/sample/sample.configが設定例です。
+
+## 3. 実行方法
+プログラムの実行方法は以下のとおりです。
+```
+python src/nmt.py [mode] [config_path] [best epoch (only testing)]
+```
+- [mode] : "train"、"dev"、"test"のいずれかを指定してください。ただし、"train"済みのモデルが存在しない場合は"dev", "test"モードは正しく実行されません。
+- [config_path] : 実験設定を記述したconfigファイルのパスを指定してください。
+- [best epoch] : "test"モードのときのみ、使用するモデルのエポック数を整数で指定してください。
