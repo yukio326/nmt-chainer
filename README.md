@@ -19,8 +19,6 @@ You have to write experimental settings in the configration file. You can see th
 
 
 - **model** : Model name.
-- **pre_model** : Pre-trained model name.
-- **pre_best_epoch** : The best epoch number of the pre-trained model.
 - **source_train** : The path to source train file.
 - **target_train** : The path to target train file.
 - **source_dev** : The path to source development file.
@@ -48,7 +46,7 @@ You have to write experimental settings in the configration file. You can see th
 ### 3. Execution
 
 ```
-python src/reconstructor.py [MODE] [CONFIG_PATH] [BEST_EPOCH (only testing)]
+python src/nmt.py [MODE] [CONFIG_PATH] [BEST_EPOCH (only testing)]
 ```
 
 - **MODE** : "train" / "dev" / "test"
