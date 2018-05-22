@@ -13,7 +13,9 @@ class Configuration:
         self.path = path
         with open(path, "r") as f:
             for line in f:
-                exec("self.{}".format(line))
+                line = line.strip()
+                if line != "":
+                    exec("self.{}".format(line))
         try:
             if self.mode not in ['train', 'test', 'dev']:
                 raise ValueError('you must set mode = \'train\' or \'test\' or \'dev\'')
@@ -45,16 +47,20 @@ class Configuration:
             print(ex)
             sys.exit()
 
-        if self.mode != "train":
-            self.use_gpu = False
-
         if self.use_gpu:
-            self.library = cuda.cupy
+            import cupy
+            self.library = cupy
         else:
             self.library = numpy
        
         if hasattr(self, "optimizer"):
             self.optimizer = self.set_optimizer(self.optimizer)
+        
+        if hasattr(self, "generator_optimizer"):
+            self.generator_optimizer = self.set_optimizer(self.generator_optimizer)
+        
+        if hasattr(self, "discriminator_optimizer"):
+            self.discriminator_optimizer = self.set_optimizer(self.discriminator_optimizer)
         
         if not self.use_dropout:
             self.dropout_rate = 0.0
@@ -64,7 +70,8 @@ class Configuration:
 
         if self.mode == "dev":
             self.use_beamsearch = False
-        
+            self.use_reconstructor_beamsearch = False
+
     def set_optimizer(self, opt):
         if opt == "AdaGrad":
             opt = optimizers.AdaGrad(lr = self.learning_rate)
@@ -170,6 +177,24 @@ def random_sorted_parallel_batch(source_path, target_path, source_vocabulary, ta
         batch_target = [batch[i][1] for i in range(len(batch))]
         yield ([Variable(lib.array(list(x), dtype = lib.int32)) for x in zip_longest(*batch_source, fillvalue = -1)], [Variable(lib.array(list(y), dtype = lib.int32)) for y in zip_longest(*batch_target, fillvalue = -1)])
 
+def random_sorted_3parallel_batch(source_path, target_path, output_path, source_vocabulary, target_vocabulary, batch_size, pooling, lib):
+    batch_list = list()
+    batch = list()
+    for n_pairs in generate_n_3pairs(source_path, target_path, output_path, source_vocabulary, target_vocabulary, batch_size * pooling):
+        for sto_pair in sorted(n_pairs, key = lambda x: len(x[0]), reverse = True):
+            batch.append(sto_pair)
+            if len(batch) == batch_size:
+                batch_list.append(batch)
+                batch = list()
+    if len(batch) > 0:
+        batch_list.append(batch)
+    random.shuffle(batch_list)
+    for batch in batch_list:
+        batch_source = [batch[i][0] for i in range(len(batch))]
+        batch_target = [batch[i][1] for i in range(len(batch))]
+        batch_output = [batch[i][2] for i in range(len(batch))]
+        yield ([Variable(lib.array(list(x), dtype = lib.int32)) for x in zip_longest(*batch_source, fillvalue = -1)], [Variable(lib.array(list(y), dtype = lib.int32)) for y in zip_longest(*batch_target, fillvalue = -1)], [Variable(lib.array(list(z), dtype = lib.int32)) for z in zip_longest(*batch_output, fillvalue = -1)])
+
 def generate_n_pairs(source_path, target_path, source_vocabulary, target_vocabulary, n):
     with open(source_path, "r") as fs, open(target_path, "r") as ft:
         n_pairs = list()
@@ -188,6 +213,52 @@ def generate_n_pairs(source_path, target_path, source_vocabulary, target_vocabul
                 n_pairs = list()
         if len(n_pairs) > 0:
             yield n_pairs
+
+def generate_n_3pairs(source_path, target_path, output_path, source_vocabulary, target_vocabulary, n):
+    with open(source_path, "r") as fs, open(target_path, "r") as ft, open(output_path, "r") as fo:
+        n_pairs = list()
+        for line_source, line_target, line_output in zip(fs, ft, fo):
+            wordid_source = list()
+            wordid_target = list()
+            wordid_output = list()
+            for word in line_source.strip("\n").split():
+                wordid_source.append(source_vocabulary.word2id[word])
+            wordid_source.append(source_vocabulary.word2id["</s>"])
+            for word in line_target.strip("\n").split():
+                wordid_target.append(target_vocabulary.word2id[word])
+            wordid_target.append(target_vocabulary.word2id["</s>"])
+            for word in line_output.strip("\n").split():
+                wordid_output.append(target_vocabulary.word2id[word])
+            wordid_output.append(target_vocabulary.word2id["</s>"])
+            n_pairs.append([wordid_source, wordid_target, wordid_output])
+            if len(n_pairs) == n:
+                yield n_pairs
+                n_pairs = list()
+        if len(n_pairs) > 0:
+            yield n_pairs
+
+def copy_model(pre_model, model):
+    assert isinstance(pre_model, link.Chain)
+    assert isinstance(model, link.Chain)
+    for child in pre_model.children():
+        if child.name not in model.__dict__: continue
+        model_child = model[child.name]
+        if type(child) != type(model_child): continue
+        if isinstance(child, link.Chain):
+            copy_model(child, model_child)
+        if isinstance(child, link.Link):
+            match = True
+            for p, m in zip(child.namedparams(), model_child.namedparams()):
+                if p[0] != m[0]:
+                    match = False
+                    break
+                if p[1].data.shape != m[1].data.shape:
+                    match = False
+                    break
+            if not match:
+                continue
+            for p, m in zip(child.namedparams(), model_child.namedparams()):
+                p[1].data = m[1].data
 
 def trace(*args):
 	print(datetime.datetime.now(), '...', *args, file=sys.stderr)
