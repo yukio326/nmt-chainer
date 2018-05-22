@@ -6,7 +6,7 @@ This is an implementation of TMU-NMT using in WAT2017. The system description is
 The demonstration is [here](http://cl.sd.tmu.ac.jp/~matsumura/translator).
 
 ### 1. Environmental Settings
-You have to install these module. The written virsion is recommended.
+You have to install these modules. The written virsion is recommended.
 - Python 3.5.1
 - chainer (ver 4.0.0)
 - numpy (ver 1.14.2)
