@@ -18,7 +18,7 @@ WAT2017におけるTMU（首都大小町研）のシステムです。
 - gensim (ver 2.2.0)
 
 ## 2. 実験設定
-実験の設定はconfigファイルにて行います。/sample/sample.configが設定例です。
+実験の設定はconfigファイルにて行います。[sample.config](https://github.com/yukio326/nmt-chainer/blob/master/sample/sample.config)が設定例です。
 
 - **model** : 保存するモデルの名前を指定してください。
 - **source_train** : 学習用ソースファイルのパスを指定してください。
