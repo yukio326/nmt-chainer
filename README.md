@@ -2,7 +2,7 @@
 
 ## English
 
-This is an implementation of TMU-NMT using in WAT2017. The system discription is [Tokyo Metropolitan University Neural Machine Translation System for WAT2017](http://aclweb.org/anthology/W17-5716.pdf).
+This is an implementation of TMU-NMT using in WAT2017. The system description is [Tokyo Metropolitan University Neural Machine Translation System for WAT2017](http://aclweb.org/anthology/W17-5716.pdf).
 The demonstration is [here](http://cl.sd.tmu.ac.jp/~matsumura/translator).
 
 ### 1. Environmental Settings
